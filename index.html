@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>かいごスキルしけん CBT</title>
+<style>
+  body {
+    font-family: "Yu Gothic", "メイリオ", "Meiryo", sans-serif;
+    margin: 0; padding: 0;
+    background-color: #f9f9f9;
+  }
+  header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background-color: #004b8d;
+    color: white;
+    padding: 12px 20px;
+    font-size: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  #timer {
+    font-weight: bold;
+    display: none;
+  }
+  #progress {
+    font-size: 16px;
+    display: none;
+  }
+  main {
+    margin: 80px auto 40px;
+    max-width: 700px;
+    background: white;
+    padding: 30px 40px 40px 40px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 8px;
+  }
+  h2 {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+  label {
+    font-size: 18px;
+    display: block;
+    margin-bottom: 12px;
+  }
+  input[type="email"], input[type="tel"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+  }
+  .question-text {
+    font-size: 20px;
+    margin-bottom: 20px;
+  }
+  .choices label {
+    display: block;
+    background: #e9ecef;
+    padding: 12px 15px;
+    margin-bottom: 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 18px;
+    user-select: none;
+  }
+  input[type="radio"] {
+    margin-right: 12px;
+  }
+  .choices label:hover {
+    background: #d4d9df;
+  }
+  .buttons {
+    margin-top: 30px;
+    display: flex;
+    justify-content: space-between;
+  }
+  button {
+    background-color: #004b8d;
+    color: white;
+    border: none;
+    padding: 12px 28px;
+    font-size: 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  button:disabled {
+    background-color: #7a9cc6;
+    cursor: default;
+  }
+  #submit-btn {
+    background-color: #2a9d8f;
+  }
+  #result {
+    font-size: 22px;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 30px;
+  }
+  #user-form {
+    display: block;
+  }
+  #quiz-container {
+    display: none;
+  }
+  .error {
+    color: red;
+    font-size: 14px;
+    margin-top: -15px;
+    margin-bottom: 15px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div id="timer">のこりじかん: 60:00</div>
+  <div id="progress">1 / 5</div>
+</header>
+
+<main>
+  <!-- User Registration Form -->
+  <div id="user-form">
+    <h2>ユーザー情報を入力してください</h2>
+    <form id="registrationForm" action="https://formspree.io/f/xeogwgjj" method="POST">
+      <label>
+        メールアドレス:<br />
+        <input type="email" name="email" id="email" required />
+        <div id="email-error" class="error"></div>
+      </label>
+      <label>
+        電話番号 (10桁の数字):<br />
+        <input type="tel" name="phone" id="phone" pattern="\d{10}" placeholder="例: 0901234567" required />
+        <div id="phone-error" class="error"></div>
+      </label>
+      <button type="submit" id="start-btn">しけんをはじめる</button>
+    </form>
+  </div>
+
+  <!-- Quiz Container -->
+  <div id="quiz-container">
+    <div class="question-text" id="question-text"></div>
+    <div class="choices" id="choices"></div>
+
+    <div class="buttons">
+      <button id="prev-btn" disabled>もどる</button>
+      <button id="next-btn" disabled>つぎへ</button>
+    </div>
+  </div>
+
+  <div id="result" style="display:none;"></div>
+</main>
+
+<script>
+  const quiz = [
+    {
+      question: "べっどから　たちあがるときに　いちばん　てきせつな　しえんは　どれですか？",
+      choices: [
+        "1. ひとりで　たつように　むりに　うながす。",
+        "2. べっどのたかさを　ちょうせいして、うでを　ささえて　たちあがらせる。",
+        "3. いそいで　たちあがらせて　ころぶのを　ふせぐ。",
+        "4. てすりを　つかわずに　たちあがらせる。"
+      ],
+      answer: 1
+    },
+    {
+      question: "にんちしょうの　りようしゃが　こんらんしたとき、てきせつな　たいおうは　どれですか？",
+      choices: [
+        "1. どなる。",
+        "2. おちついたこえで　はなしかける。",
+        "3. むしをする。",
+        "4. ふくざつな　しじを　くりかえす。"
+      ],
+      answer: 1
+    },
+    {
+      question: "じょくそうを　よぼうするために　ひつような　ケアは　どれですか？",
+      choices: [
+        "1. ながじかん　おなじ　しせいのままに　する。",
+        "2. こまめに　たいを　かえる。",
+        "3. べっどに　つなぐ。",
+        "4. そうじや　せいけつを　しない。"
+      ],
+      answer: 1
+    },
+    {
+      question: "りようしゃが　たべものを　のみこみにくそうな　とき、まず　なんにんを　よびますか？",
+      choices: [
+        "1. いちにん",
+        "2. ににん",
+        "3. さんにん",
+        "4. よにん"
+      ],
+      answer: 0
+    },
+    {
+      question: "しょくじの　あと、はを　みがくのは　なぜですか？",
+      choices: [
+        "1. はを　きれいに　するため。",
+        "2. うみあげの　ため。",
+        "3. のどを　かむため。",
+        "4. あしを　あらうため。"
+      ],
+      answer: 0
+    }
+  ];
+
+  // DOM Elements
+  const userForm = document.getElementById('user-form');
+  const quizContainer = document.getElementById('quiz-container');
+  const registrationForm = document.getElementById('registrationForm');
+  const emailInput = document.getElementById('email');
+  const phoneInput = document.getElementById('phone');
+  const emailError = document.getElementById('email-error');
+  const phoneError = document.getElementById('phone-error');
+  const startBtn = document.getElementById('start-btn');
+  const questionTextEl = document.getElementById('question-text');
+  const choicesEl = document.getElementById('choices');
+  const prevBtn = document.getElementById('prev-btn');
+  const nextBtn = document.getElementById('next-btn');
+  const progressEl = document.getElementById('progress');
+  const timerEl = document.getElementById('timer');
+  const resultEl = document.getElementById('result');
+
+  // Quiz Variables
+  let currentIndex = 0;
+  let score = 0;
+  const total = quiz.length;
+  let userAnswers = Array(total).fill(-1);
+  let timerInterval;
+  let timeLeft = 60 * 60; // 60 minutes in seconds
+
+  // User Data
+  let userEmail = '';
+  let userPhone = '';
+
+  // Form Validation
+  function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  }
+
+  function validatePhone(phone) {
+    return /^\d{10}$/.test(phone);
+  }
+
+  // Send User Data to Email (using Formspree)
+  function sendUserData() {
+    const formData = new FormData();
+    formData.append('email', userEmail);
+    formData.append('phone', userPhone);
+    formData.append('timestamp', new Date().toLocaleString());
+
+    fetch('https://formspree.io/f/xeogwgjj', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        console.error('送信に失敗しました');
+      }
+    })
+    .catch(error => {
+      console.error('エラー:', error);
+    });
+  }
+
+  // Registration Form Submission
+  registrationForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    // Reset errors
+    emailError.textContent = '';
+    phoneError.textContent = '';
+    
+    // Get values
+    userEmail = emailInput.value.trim();
+    userPhone = phoneInput.value.trim();
+    
+    // Validate
+    let isValid = true;
+    
+    if (!validateEmail(userEmail)) {
+      emailError.textContent = '有効なメールアドレスを入力してください';
+      isValid = false;
+    }
+    
+    if (!validatePhone(userPhone)) {
+      phoneError.textContent = '10桁の数字を入力してください (ハイフンなし)';
+      isValid = false;
+    }
+    
+    if (isValid) {
+      // Hide user form and show quiz
+      userForm.style.display = 'none';
+      quizContainer.style.display = 'block';
+      timerEl.style.display = 'block';
+      progressEl.style.display = 'block';
+      
+      // Start timer and load first question
+      startTimer();
+      loadQuestion();
+      
+      // Send user data to email
+      sendUserData();
+    }
+  });
+
+  // Quiz Functions
+  function loadQuestion() {
+    const q = quiz[currentIndex];
+    questionTextEl.textContent = q.question;
+    choicesEl.innerHTML = '';
+
+    q.choices.forEach((choice, idx) => {
+      const label = document.createElement('label');
+      label.style.userSelect = 'none';
+      const radio = document.createElement('input');
+      radio.type = 'radio';
+      radio.name = 'choice';
+      radio.value = idx;
+      radio.style.marginRight = '12px';
+      if (userAnswers[currentIndex] === idx) {
+        radio.checked = true;
+        nextBtn.disabled = false;
+      }
+      radio.addEventListener('change', () => {
+        userAnswers[currentIndex] = parseInt(radio.value);
+        nextBtn.disabled = false;
+      });
+
+      label.appendChild(radio);
+      label.appendChild(document.createTextNode(choice));
+      choicesEl.appendChild(label);
+    });
+
+    progressEl.textContent = `${currentIndex + 1} / ${total}`;
+    
+    prevBtn.disabled = currentIndex === 0;
+    nextBtn.textContent = currentIndex === total -1 ? "ていしゅつ" : "つぎへ";
+    nextBtn.disabled = userAnswers[currentIndex] === -1;
+  }
+
+  function showResult() {
+    quizContainer.style.display = 'none';
+    let correctCount = 0;
+    for (let i=0; i<total; i++) {
+      if (userAnswers[i] === quiz[i].answer) correctCount++;
+    }
+    resultEl.style.display = 'block';
+    resultEl.textContent = `しけんおわりました。せいかは ${correctCount} / ${total} てんです。`;
+  }
+
+  // Timer Function
+  function startTimer() {
+    clearInterval(timerInterval); // Clear any existing timer
+    timeLeft = 60 * 60; // Reset to 60 minutes
+    
+    timerInterval = setInterval(() => {
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      timerEl.textContent = `のこりじかん: ${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+      
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        alert("じかんがきれました。しけんはじどうていしゅつされます。");
+        showResult();
+        quizContainer.style.pointerEvents = 'none';
+      }
+      timeLeft--;
+    }, 1000);
+  }
+
+  // Event Listeners for Quiz Navigation
+  prevBtn.addEventListener('click', () => {
+    if (currentIndex > 0) {
+      currentIndex--;
+      loadQuestion();
+    }
+  });
+
+  nextBtn.addEventListener('click', () => {
+    if (userAnswers[currentIndex] === -1) return;
+
+    if (currentIndex < total -1) {
+      currentIndex++;
+      loadQuestion();
+    } else {
+      if (confirm("ていしゅつしてもよろしいですか？")) {
+        showResult();
+        clearInterval(timerInterval);
+      }
+    }
+  });
+
+  // Phone number input validation
+  phoneInput.addEventListener('input', function() {
+    this.value = this.value.replace(/\D/g, ''); // Remove non-digit characters
+  });
+</script>
+
+</body>
+</html>
